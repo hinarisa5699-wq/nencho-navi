@@ -1,0 +1,692 @@
+<title>年末調整ナビ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap">
+<style>
+/* Layout: 1列の入力フォーム（質問→入力→判定チップ）→ 最後に提出用シートのプレビューと保存。書類は申告書右上の丸印で見分ける */
+:root{
+  --paper:#f4f6f9; --sheet:#ffffff; --ink:#1d2a3a; --muted:#5b6878; --line:#d7dde6;
+  --navy:#24476e; --navy-soft:#e6edf6; --shu:#c8402a; --shu-soft:#fbe9e5; --ok:#2f7a4d; --ok-soft:#e5f2ea; --field:#f8fafc;
+  --f-display:"Zen Maru Gothic","BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --f-body:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#141a22; --sheet:#1c2430; --ink:#e6ebf2; --muted:#9aa7b7; --line:#2f3a48;
+  --navy:#8fb4e0; --navy-soft:#22324a; --shu:#f0806b; --shu-soft:#3a2420; --ok:#7cc79a; --ok-soft:#1f3328; --field:#161d27; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#141a22; --sheet:#1c2430; --ink:#e6ebf2; --muted:#9aa7b7; --line:#2f3a48;
+  --navy:#8fb4e0; --navy-soft:#22324a; --shu:#f0806b; --shu-soft:#3a2420; --ok:#7cc79a; --ok-soft:#1f3328; --field:#161d27; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-size:28px;line-height:1.3;margin:0;text-wrap:balance}
+h1 small{display:block;font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:400;letter-spacing:.06em}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0;padding:0;list-style:none;counter-reset:f}
+.flow li{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55;counter-increment:f}
+.flow li::before{content:counter(f);display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--sheet);font-size:12px;font-weight:700;margin-right:6px}
+.flow li.due{border-color:var(--shu);background:var(--shu-soft)}
+.flow b{color:var(--shu)}
+.q{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.q>h2{font-size:17px;margin:0;line-height:1.5;text-wrap:balance}
+.q .no{display:inline-block;min-width:1.9em;color:var(--navy);font-variant-numeric:tabular-nums}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font:inherit;font-size:14px;line-height:1.45;text-align:left;cursor:pointer;background:var(--sheet);color:var(--ink);
+  border:1.5px solid var(--line);border-radius:8px;padding:9px 13px;flex:1 1 200px;min-width:0}
+.opt:hover{border-color:var(--navy)}
+.opt[aria-pressed="true"]{border-color:var(--navy);background:var(--navy-soft);font-weight:700}
+.opt .sub{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 12px}
+.fields .w2{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);min-width:0}
+label.f em{font-style:normal;color:var(--shu)}
+label.f input,label.f select{font:inherit;font-size:15px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;box-sizing:border-box;min-width:0}
+label.f input[type=number]{font-variant-numeric:tabular-nums}
+label.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.person{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.person-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.person-head b{font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--navy-soft);color:var(--navy)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.ng{background:var(--shu-soft);color:var(--shu)}
+.btn{font:inherit;font-size:14px;cursor:pointer;border-radius:8px;padding:8px 14px;border:1.5px solid var(--navy);background:var(--sheet);color:var(--navy);font-weight:700}
+.btn.primary{background:var(--navy);color:var(--sheet);font-size:16px;padding:12px 20px}
+.btn.del{border-color:var(--line);color:var(--muted);font-weight:400;padding:4px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.warn{background:var(--shu-soft);border-radius:8px;padding:10px 12px;font-size:14px;margin:0}
+.okmsg{background:var(--ok-soft);border-radius:8px;padding:10px 12px;font-size:14px;margin:0}
+.preview-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#e9ecf0;padding:12px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+footer{font-size:12.5px;color:var(--muted)}
+.dsel{display:flex;gap:6px;min-width:0}
+.dsel select{flex:1 1 0;min-width:0;font:inherit;font-size:15px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 4px}
+.dsel select:first-child{flex:2 1 0}
+#printArea{display:none}
+@page{size:A4;margin:8mm}
+@media print{body{background:#fff!important;padding:0!important}body>*:not(#printArea){display:none!important}#printArea{display:block!important}#printArea .sh{padding:0;width:auto}}
+.mk{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);font-family:var(--f-display);font-size:14px;margin-right:6px;vertical-align:middle}
+</style>
+
+<div class="wrap">
+  <h1><small>株式会社イケイケカンパニー　令和8年分</small>年末調整ナビ</h1>
+  <ol class="flow">
+    <li>質問に答えて、自分と家族のことを入力</li>
+    <li>いちばん下の「印刷する」を押して、A4で印刷</li>
+    <li>印刷したシートに<b>個人番号（マイナンバー）を手書き</b></li>
+    <li class="due">保険の控除証明書（原本）を添えて担当者へ。<b>11月13日（金）まで</b></li>
+  </ol>
+  <p class="hint">入力した内容はこの端末のブラウザだけに残り、会社には送られません。家族のことは今年12月31日の状態で、年収は1〜12月の見込み（非課税の交通費は除く）で入れてください。</p>
+
+  <section class="q" data-step="work">
+    <h2><span class="no">1</span>ほかの会社でも働いていますか（ダブルワーク）</h2>
+    <div class="opts" data-q="work">
+      <button class="opt" data-v="single">いいえ、この会社だけ</button>
+      <button class="opt" data-v="main">はい。この会社がメイン<span class="sub">扶養控除等申告書はこの会社に出す</span></button>
+      <button class="opt" data-v="sub">はい。ほかの会社がメイン<span class="sub">扶養控除等申告書はほかの会社に出している</span></button>
+    </div>
+    <p class="okmsg" id="subMsg" hidden>年末調整はメインの会社で受けてください。この会社への申告書の提出はいりません。来年1月にこの会社の源泉徴収票が届いたら、メインの会社の源泉徴収票とあわせてご自身で確定申告をしてください（この会社の給与が年20万円以下などで不要な場合もあります）。</p>
+  </section>
+
+  <div id="main" hidden>
+  <div class="wrap" style="max-width:none">
+  <section class="q">
+    <h2><span class="no">2</span>あなたのこと</h2>
+    <div class="fields">
+      <label class="f">氏名 <em>必須</em><input id="me-name" autocomplete="name"></label>
+      <label class="f">フリガナ <em>必須</em><input id="me-kana"></label>
+      <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日 <em style="font-style:normal;color:var(--shu)">必須</em><span class="dsel" data-fixed="me.birth"></span></div>
+      <label class="f">所属（事業所）<input id="me-office" placeholder="例 アロハナースステーション"></label>
+      <label class="f">郵便番号<input id="me-zip" inputmode="numeric" placeholder="194-0000"></label>
+      <label class="f">住んでいる市区町村 <em>必須</em><input id="me-city" placeholder="例 町田市"></label>
+      <label class="f w2">住所（市区町村から）<em>必須</em><input id="me-addr" placeholder="例 町田市森野1-2-3 ○○マンション101"></label>
+      <label class="f">世帯主の氏名<input id="me-head" placeholder="自分が世帯主なら自分の名前"></label>
+      <label class="f">世帯主とあなたの続柄<input id="me-headrel" placeholder="例 本人、夫、父"></label>
+      <label class="f">今年の年収（この会社の給与）<input id="me-inc8" type="number" inputmode="numeric" min="0" step="1000" placeholder="例 3000000"></label>
+      <label class="f">来年の年収の見込み<input id="me-inc9" type="number" inputmode="numeric" min="0" step="1000" placeholder="今年と同じなら空欄"></label>
+    </div>
+    <p class="hint">年収は給与明細の総支給額を足した見込みです。ほかの会社の給与は含めません。</p>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">3</span>今年の途中に入社して、前の職場でも給与をもらいましたか</h2>
+    <div class="opts" data-q="prev">
+      <button class="opt" data-v="no">いいえ</button>
+      <button class="opt" data-v="yes">はい<span class="sub">前の職場の源泉徴収票（原本）が必要です</span></button>
+    </div>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">4</span>配偶者（夫・妻）はいますか</h2>
+    <div class="opts" data-q="sp">
+      <button class="opt" data-v="no">いない</button>
+      <button class="opt" data-v="yes">いる</button>
+    </div>
+    <div class="person" id="sp-box" hidden>
+      <div class="fields">
+        <label class="f">氏名<input id="sp-name"></label>
+        <label class="f">フリガナ<input id="sp-kana"></label>
+        <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日<span class="dsel" data-fixed="spouse.birth"></span></div>
+        <label class="f">今年の給与の年収（なければ0）<input id="sp-inc8" type="number" inputmode="numeric" min="0" step="1000"></label>
+        <label class="f">来年の給与の年収見込み<input id="sp-inc9" type="number" inputmode="numeric" min="0" step="1000" placeholder="今年と同じなら空欄"></label>
+        <label class="f">給与以外の所得（年金・事業など）<input id="sp-other" type="number" inputmode="numeric" min="0" step="1000" placeholder="なければ空欄"></label>
+        <label class="f">障害<select id="sp-dis"><option value="">なし</option><option value="g">障害者</option><option value="s">特別障害者（1・2級など）</option></select></label>
+        <label class="f">住所が違うときの住所<input id="sp-addr" placeholder="同居なら空欄"></label>
+      </div>
+      <div class="chips" id="sp-chips"></div>
+    </div>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">5</span>あなたが養っている家族（配偶者以外）はいますか</h2>
+    <p class="hint">一緒に生活費を出している子・親などです。収入が多くて扶養に入らない家族も、入れると自動で判定します。</p>
+    <div class="opts" data-q="fam">
+      <button class="opt" data-v="no">いない</button>
+      <button class="opt" data-v="yes">いる</button>
+    </div>
+    <div id="fam-box" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div id="fam-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div><button class="btn" id="fam-add" type="button">＋ 家族を追加</button></div>
+    </div>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">6</span>あなた自身に当てはまるものは</h2>
+    <div class="opts" data-q="self" data-multi>
+      <button class="opt" data-v="none">どれも当てはまらない</button>
+      <button class="opt" data-v="dis">障害者手帳などを持っている</button>
+      <button class="opt" data-v="single">ひとり親<span class="sub">未婚・離婚・死別で、子を養っている</span></button>
+      <button class="opt" data-v="widow">寡婦<span class="sub">夫と離婚して子以外の家族を養っている、または夫と死別した女性</span></button>
+      <button class="opt" data-v="student">勤労学生<span class="sub">働きながら学校に通っている</span></button>
+    </div>
+    <div class="fields" id="self-detail" hidden>
+      <label class="f" data-for="dis">障害の区分<select id="me-dis"><option value="g">障害者</option><option value="s">特別障害者（1・2級など）</option></select></label>
+      <label class="f w2" data-for="dis">手帳の種類・等級・交付年月日<input id="me-disinfo" placeholder="例 身体障害者手帳 3級 令和2年4月1日交付"></label>
+      <label class="f w2" data-for="student">学校名・入学年月日<input id="me-school" placeholder="例 ○○看護専門学校 令和7年4月入学"></label>
+    </div>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">7</span>自分で払っている保険料・掛金はありますか</h2>
+    <p class="hint">給与から天引きされているものは含めません。秋ごろ届く「控除証明書」を見ながら入れてください。</p>
+    <div class="opts" data-q="ins" data-multi>
+      <button class="opt" data-v="none">ない</button>
+      <button class="opt" data-v="life">生命保険・医療保険・個人年金</button>
+      <button class="opt" data-v="quake">地震保険</button>
+      <button class="opt" data-v="social">国民年金・国民健康保険などを自分で納付</button>
+      <button class="opt" data-v="small">iDeCo・小規模企業共済</button>
+    </div>
+    <div id="ins-life" hidden style="display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:14px">生命保険料（証明書1枚ごとに1件）</b>
+      <div id="life-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div><button class="btn" type="button" data-add="life">＋ 生命保険を追加</button></div>
+    </div>
+    <div id="ins-quake" hidden style="display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:14px">地震保険料</b>
+      <div id="quake-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div><button class="btn" type="button" data-add="quake">＋ 地震保険を追加</button></div>
+    </div>
+    <div id="ins-social" hidden style="display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:14px">社会保険料（自分で払った分）</b>
+      <div id="social-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div><button class="btn" type="button" data-add="social">＋ 追加</button></div>
+    </div>
+    <div id="ins-small" hidden style="display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:14px">小規模企業共済等掛金</b>
+      <div id="small-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div><button class="btn" type="button" data-add="small">＋ 追加</button></div>
+    </div>
+    <div class="chips" id="ins-chips"></div>
+  </section>
+
+  <section class="q">
+    <h2><span class="no">8</span>提出用シート</h2>
+    <div id="missing"></div>
+    <div class="actions">
+      <button class="btn primary" type="button" id="save">提出用シートを保存</button>
+      <button class="btn del" type="button" id="clear">入力をすべて消す</button>
+      <span id="saveMsg" class="hint" role="status"></span>
+    </div>
+    <p class="hint" id="howto">保存したファイルを開くと「印刷する」ボタンがあります。A4縦で印刷してください。スマホの場合は、ファイルを開いて共有メニューから印刷できます。</p>
+    <div class="preview-wrap"><div id="preview"></div></div>
+  </section>
+  </div>
+  </div>
+
+  <footer>このシートは、国税庁の扶養控除等申告書・基礎控除申告書兼配偶者控除等申告書兼特定親族特別控除申告書・保険料控除申告書の記載事項を1つにまとめたものです。金額の目安は令和8年分の年末調整の基準で計算しています。年金や事業の収入がある家族、外国に住む家族がいる場合は、提出前に担当者に確認してください。</footer>
+</div>
+
+<script>
+const KEY='nencho-r8-draft-v2';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const yen=n=>(n??0).toLocaleString('ja-JP')+'円';
+const num=v=>{const n=parseInt(String(v??'').replace(/[,，]/g,''),10);return isNaN(n)||n<0?null:n;};
+
+let S={work:null,prev:null,sp:null,fam:null,self:[],ins:[],me:{},spouse:{},family:[],life:[],quake:[],social:[],small:[]};
+try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d)S=Object.assign(S,d);}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ---------- 税の計算（令和8年分） ---------- */
+function kyuyo(a){
+  if(!a||a<741000)return 0;
+  if(a<2191000)return a-740000;
+  if(a<2193000)return 1451000;
+  if(a<2196000)return 1453000;
+  if(a<2200000)return 1456000;
+  const b=Math.floor(a/4000)*1000;
+  if(a<3600000)return Math.round(b*28/10)-80000;
+  if(a<6600000)return Math.round(b*32/10)-440000;
+  if(a<8500000)return Math.floor(a*0.9)-1100000;
+  return a-1950000;
+}
+function nenkin(x,is65){
+  if(!x)return 0;
+  if(x<=(is65?3300000:1300000))return Math.max(0,x-(is65?1100000:600000));
+  if(x<=4100000)return Math.floor(x*0.75)-275000;
+  if(x<=7700000)return Math.floor(x*0.85)-685000;
+  return Math.floor(x*0.95)-1455000;
+}
+function kiso(s){
+  if(s<=4890000)return[1040000,'A','489万円以下'];
+  if(s<=6550000)return[670000,'A','489万円超 655万円以下'];
+  if(s<=9000000)return[620000,'A','655万円超 900万円以下'];
+  if(s<=9500000)return[620000,'B','900万円超 950万円以下'];
+  if(s<=10000000)return[620000,'C','950万円超 1,000万円以下'];
+  if(s<=23500000)return[620000,'','1,000万円超 2,350万円以下'];
+  if(s<=24000000)return[480000,'','2,350万円超 2,400万円以下'];
+  if(s<=24500000)return[320000,'','2,400万円超 2,450万円以下'];
+  if(s<=25000000)return[160000,'','2,450万円超 2,500万円以下'];
+  return[0,'','2,500万円超'];
+}
+const SPT={A:[48,38,38,[36,31,26,21,16,11,6,3]],B:[32,26,26,[24,21,18,14,11,8,4,2]],C:[16,13,13,[12,11,9,7,6,4,2,1]]};
+function spouseDed(k1,s,is70){
+  if(!k1)return null;
+  if(s<=620000)return{k2:is70?'①':'②',amt:SPT[k1][is70?0:1]*10000,kind:'配偶者控除'};
+  if(s<=950000)return{k2:'③',amt:SPT[k1][2]*10000,kind:'配偶者特別控除'};
+  if(s<=1330000){const i=s<=1000000?0:Math.min(7,Math.ceil((s-1000000)/50000));return{k2:'④',amt:SPT[k1][3][i]*10000,kind:'配偶者特別控除'};}
+  return null;
+}
+function tokuteiDed(s){const t=[[850000,63],[900000,61],[950000,51],[1000000,41],[1050000,31],[1100000,21],[1150000,11],[1200000,6],[1230000,3]];for(const[l,v]of t)if(s<=l)return v*10000;return 0;}
+const up=Math.ceil;
+const fI=x=>x<=20000?x:x<=40000?up(x/2+10000):x<=80000?up(x/4+20000):40000;
+const fII=x=>x<=30000?x:x<=60000?up(x/2+15000):x<=120000?up(x/4+30000):60000;
+const fIII=x=>x<=25000?x:x<=50000?up(x/2+12500):x<=100000?up(x/4+25000):50000;
+
+/* 年齢は翌年1月1日時点（税法の年齢の数え方と同じ） */
+function age(b,Y){if(!/^\d{4}-\d{2}-\d{2}$/.test(b||''))return null;const[y,m,d]=b.split('-').map(Number);return Y+1-y-((m*100+d)>101?1:0);}
+function wareki(b){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(b||''))return '　　年　月　日';
+  const[y,m,d]=b.split('-').map(Number),v=y*10000+m*100+d;
+  let e,ey;
+  if(v>=20190501){e='令和';ey=y-2018;}else if(v>=19890108){e='平成';ey=y-1988;}else if(v>=19261225){e='昭和';ey=y-1925;}else{e='大正';ey=y-1911;}
+  return e+(ey===1?'元':ey)+'年'+m+'月'+d+'日';
+}
+const income=(p,Y)=>Y===2026?num(p.inc8):(num(p.inc9)??num(p.inc8));
+function meS(Y){return kyuyo(income(S.me,Y)||0);}
+function spS(Y){const sp=S.spouse;return kyuyo(income(sp,Y)||0)+(num(sp.other)||0);}
+const ASC=['父','母','祖父','祖母','義父','義母'];
+function famCat(p,Y){
+  const a=age(p.birth,Y),inc=income(p,Y)||0;
+  const s=p.itype==='nenkin'?nenkin(inc,a!==null&&a>=65):p.itype==='none'?0:kyuyo(inc);
+  const r={a,s,b:null,u16:false,tokutei:false,fuyou:s<=620000,u23:false,note:''};
+  if(a===null){r.note='生年月日を入れてください';return r;}
+  if(a<16){if(r.fuyou)r.u16=true;}
+  else if(a>=19&&a<=22){
+    if(s<=620000)r.b='特定扶養親族';
+    else if(s<=1000000)r.b='特定親族';
+    if(s>620000&&s<=1230000)r.tokutei=true;
+  }else if(a>=70){if(r.fuyou)r.b=(ASC.includes(p.rel)&&p.live!=='no')?'同居老親等':'老人（その他）';}
+  else if(r.fuyou)r.b='一般';
+  r.u23=r.fuyou&&a<23;
+  if(!r.b&&!r.u16&&!r.tokutei)r.note='収入が多いため扶養の対象外';
+  return r;
+}
+
+/* ---------- 生年月日のスクロール選択（年・月・日） ---------- */
+function eraOf(y){
+  if(y>2019)return '令和'+(y-2018);if(y===2019)return '平成31・令和元';
+  if(y>1989)return '平成'+(y-1988);if(y===1989)return '昭和64・平成元';
+  if(y>1926)return '昭和'+(y-1925);if(y===1926)return '大正15・昭和元';return '大正'+(y-1911);
+}
+function dselInner(v,y1,y2){
+  const[py,pm,pd]=String(v||'').split('-');
+  let h='<select data-part="y" aria-label="年"><option value="">年</option>';
+  for(let y=y2;y>=y1;y--)h+=`<option value="${y}"${+py===y?' selected':''}>${y}年（${eraOf(y)}年）</option>`;
+  h+='</select><select data-part="m" aria-label="月"><option value="">月</option>';
+  for(let m=1;m<=12;m++)h+=`<option value="${String(m).padStart(2,'0')}"${+pm===m?' selected':''}>${m}月</option>`;
+  h+='</select><select data-part="d" aria-label="日"><option value="">日</option>';
+  for(let d=1;d<=31;d++)h+=`<option value="${String(d).padStart(2,'0')}"${+pd===d?' selected':''}>${d}日</option>`;
+  return h+'</select>';
+}
+function fixedObj(path){const[o,f]=path.split('.');return[o==='me'?S.me:S.spouse,f];}
+function initFixedDates(){document.querySelectorAll('.dsel[data-fixed]').forEach(sp=>{const[o,f]=fixedObj(sp.dataset.fixed);sp.innerHTML=dselInner(o[f],1910,2026);});}
+document.addEventListener('change',e=>{
+  const sp=e.target.closest&&e.target.closest('.dsel');if(!sp)return;
+  const g=p=>sp.querySelector(`[data-part="${p}"]`).value;
+  const v=g('y')+'-'+g('m')+'-'+g('d');
+  if(sp.dataset.fixed){const[o,f]=fixedObj(sp.dataset.fixed);o[f]=v;}
+  else S[sp.dataset.k][+sp.dataset.i][sp.dataset.f]=v;
+  persist();update();
+});
+
+/* ---------- 質問ボタン ---------- */
+function bindOpts(){
+  document.querySelectorAll('.opts').forEach(g=>{
+    const key=g.dataset.q,multi=g.hasAttribute('data-multi');
+    g.querySelectorAll('.opt').forEach(b=>{
+      b.type='button';
+      b.addEventListener('click',()=>{
+        const v=b.dataset.v;
+        if(multi){let a=S[key].filter(x=>x!=='none');if(v==='none')a=['none'];else a=a.includes(v)?a.filter(x=>x!==v):[...a,v];S[key]=a;}
+        else S[key]=v;
+        if(key==='fam'&&v==='yes'&&!S.family.length)S.family.push({});
+        ['life','quake','social','small'].forEach(k=>{if(key==='ins'&&v===k&&S.ins.includes(k)&&!S[k].length)S[k].push({});});
+        persist();syncOpts();renderLists();update();
+      });
+    });
+  });
+}
+function syncOpts(){
+  document.querySelectorAll('.opts').forEach(g=>{
+    const key=g.dataset.q,multi=g.hasAttribute('data-multi');
+    g.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',multi?S[key].includes(b.dataset.v):S[key]===b.dataset.v));
+  });
+}
+
+/* ---------- 固定の入力欄 ---------- */
+function bindFixed(){
+  document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{
+    if(!('value' in el)||el.tagName==='DIV')return;
+    const [grp,f]=el.id.split('-');const obj=grp==='me'?S.me:S.spouse;
+    el.value=obj[f]??'';
+    el.addEventListener('input',()=>{obj[f]=el.value;persist();update();});
+  });
+}
+
+/* ---------- 追加できる行 ---------- */
+const SCHEMA={
+  family:[
+    ['name','氏名'],['kana','フリガナ'],['rel','続柄','sel',['子','父','母','義父','義母','祖父','祖母','孫','兄弟姉妹','その他']],
+    ['birth','生年月日','date'],['itype','収入の種類','sel',[['kyuyo','給与'],['nenkin','公的年金'],['none','収入なし']]],
+    ['inc8','今年の年収','num'],['inc9','来年の年収見込み','num','今年と同じなら空欄'],
+    ['live','同居','sel',[['yes','同居している'],['no','別居']]],['addr','別居なら住所'],
+    ['dis','障害','sel',[['','なし'],['g','障害者'],['s','特別障害者']]],['disinfo','障害の内容（手帳の種類・等級・交付日）']
+  ],
+  life:[
+    ['kind','区分','sel',[['ippan','一般の生命保険'],['kaigo','介護医療保険（医療・がん等）'],['nenkin','個人年金保険']]],
+    ['nw','新・旧（証明書の適用制度）','sel',[['new','新'],['old','旧']]],
+    ['co','保険会社名'],['type','保険の種類','txt','例 終身、医療'],['period','保険期間','txt','例 終身、10年'],
+    ['owner','契約者の氏名'],['recv','受取人の氏名'],['start','年金支払開始日（個人年金のみ）','date'],['amt','証明書の金額（申告額）','num']
+  ],
+  quake:[
+    ['kind','区分','sel',[['jishin','地震保険料'],['kyu','旧長期損害保険料']]],['co','保険会社名'],['type','保険の種類（目的）','txt','例 地震（建物）'],
+    ['period','保険期間','txt','例 5年'],['owner','契約者の氏名'],['resident','住んでいる人の氏名'],['amt','証明書の金額','num']
+  ],
+  social:[
+    ['kind','種類','sel',['国民年金','国民健康保険','介護保険料','後期高齢者医療保険料','国民年金基金','その他']],
+    ['payee','支払先','txt','例 日本年金機構、町田市'],['bearer','負担することになっている人の氏名'],['amt','今年払った金額（12月までの予定含む）','num']
+  ],
+  small:[
+    ['kind','種類','sel',['個人型年金（iDeCo）','中小企業基盤整備機構の共済（小規模企業共済）','企業型年金の加入者掛金','心身障害者扶養共済']],['amt','今年払った金額','num']
+  ]
+};
+const LABEL={family:'家族',life:'生命保険',quake:'地震保険',social:'社会保険料',small:'掛金'};
+function renderList(k){
+  const box=$('#'+(k==='family'?'fam':k)+'-list');if(!box)return;
+  box.innerHTML=S[k].map((row,i)=>{
+    const f=SCHEMA[k].map(([key,lab,t,o])=>{
+      const id=`${k}-${i}-${key}`,v=esc(row[key]??'');
+      if(t==='sel'){const opts=o.map(x=>{const[val,txt]=Array.isArray(x)?x:[x,x];return `<option value="${esc(val)}"${(row[key]??(Array.isArray(o[0])?o[0][0]:o[0]))===val?' selected':''}>${esc(txt)}</option>`}).join('');return `<label class="f">${lab}<select id="${id}" data-k="${k}" data-i="${i}" data-f="${key}">${opts}</select></label>`;}
+      if(t==='date')return `<div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">${lab}<span class="dsel" data-k="${k}" data-i="${i}" data-f="${key}">${dselInner(row[key],key==='start'?2000:1910,key==='start'?2080:2026)}</span></div>`;
+      const type=t==='num'?'number':'text';
+      const extra=t==='num'?' inputmode="numeric" min="0" step="100"':'';
+      const ph=(t==='txt'||t==='num')&&o?` placeholder="${esc(o)}"`:'';
+      return `<label class="f${key==='disinfo'||key==='addr'?' w2':''}">${lab}<input id="${id}" type="${type}" value="${v}" data-k="${k}" data-i="${i}" data-f="${key}"${extra}${ph}></label>`;
+    }).join('');
+    return `<div class="person"><div class="person-head"><b>${LABEL[k]} ${i+1}</b><button class="btn del" type="button" data-del="${k}" data-i="${i}">この${LABEL[k]}を消す</button></div><div class="fields">${f}</div><div class="chips" id="chips-${k}-${i}"></div></div>`;
+  }).join('');
+  // 選択肢の初期値を状態に入れる
+  S[k].forEach((row,i)=>SCHEMA[k].forEach(([key,,t,o])=>{if(t==='sel'&&row[key]===undefined){const x=o[0];row[key]=Array.isArray(x)?x[0]:x;}}));
+}
+function renderLists(){['family','life','quake','social','small'].forEach(renderList);}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.k){S[t.dataset.k][+t.dataset.i][t.dataset.f]=t.value;persist();update();}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.k&&t.tagName==='SELECT'){S[t.dataset.k][+t.dataset.i][t.dataset.f]=t.value;persist();update();}});
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-del]');if(d){S[d.dataset.del].splice(+d.dataset.i,1);persist();renderLists();update();return;}
+  const a=e.target.closest('[data-add]');if(a){S[a.dataset.add].push({});persist();renderList(a.dataset.add);update();}
+});
+$('#fam-add').addEventListener('click',()=>{S.family.push({});persist();renderList('family');update();});
+
+/* ---------- 判定と表示 ---------- */
+function chip(t,c){return `<span class="chip ${c||''}">${esc(t)}</span>`;}
+function spInfo(){
+  if(S.sp!=='yes')return null;
+  const sp=S.spouse,s8=spS(2026),a=age(sp.birth,2026);
+  const k1=kiso(meS(2026))[1];
+  return{s8,a,A8:meS(2026)<=9000000&&s8<=950000,A9:meS(2027)<=9000000&&spS(2027)<=950000,
+    ded:meS(2026)<=10000000?spouseDed(k1,s8,a!==null&&a>=70):null,dosei:s8<=620000};
+}
+function update(){
+  const sub=S.work==='sub';
+  $('#subMsg').hidden=!sub;$('#main').hidden=!S.work||sub;
+  $('#sp-box').hidden=S.sp!=='yes';
+  $('#fam-box').hidden=S.fam!=='yes';$('#fam-box').style.display=S.fam==='yes'?'flex':'none';
+  $('#self-detail').hidden=!(S.self.includes('dis')||S.self.includes('student'));
+  document.querySelectorAll('#self-detail [data-for]').forEach(e=>e.hidden=!S.self.includes(e.dataset.for));
+  ['life','quake','social','small'].forEach(k=>{const b=$('#ins-'+k);b.hidden=!S.ins.includes(k);b.style.display=S.ins.includes(k)?'flex':'none';});
+  // 配偶者チップ
+  const si=spInfo();
+  if(si){let c=[];
+    c.push(chip('配偶者の所得 '+yen(si.s8)));
+    c.push(si.A8?chip('源泉控除対象配偶者（A欄に書く）','ok'):chip('A欄には書かない'));
+    c.push(si.ded?chip(si.ded.kind+' '+yen(si.ded.amt),'ok'):chip('配偶者控除は受けられない','ng'));
+    $('#sp-chips').innerHTML=c.join('');}
+  // 家族チップ
+  S.family.forEach((p,i)=>{const r=famCat(p,2026),el=$('#chips-family-'+i);if(!el)return;let c=[];
+    if(r.a!==null)c.push(chip(r.a+'歳・所得 '+yen(r.s)));
+    if(r.b)c.push(chip(r.b+'（B欄）','ok'));
+    if(r.u16)c.push(chip('16歳未満（住民税の欄）','ok'));
+    if(r.tokutei)c.push(chip('特定親族特別控除 '+yen(tokuteiDed(r.s)),'ok'));
+    if(r.note)c.push(chip(r.note,'ng'));
+    el.innerHTML=c.join('');});
+  // 保険チップ
+  const hc=hoCalc();let ic=[];
+  if(hc.life!==null)ic.push(chip('生命保険料控除 '+yen(hc.life),'ok'));
+  if(hc.quake!==null)ic.push(chip('地震保険料控除 '+yen(hc.quake),'ok'));
+  $('#ins-chips').innerHTML=ic.join('');
+  // 未入力チェック
+  const miss=[];
+  if(!S.me.name)miss.push('氏名');if(!S.me.kana)miss.push('フリガナ');if(age(S.me.birth,2026)===null)miss.push('生年月日');if(!S.me.addr)miss.push('住所');if(!S.me.city)miss.push('市区町村');
+  if(S.sp===null)miss.push('質問4');if(S.fam===null)miss.push('質問5');if(!S.ins.length)miss.push('質問7');if(S.prev===null)miss.push('質問3');
+  S.family.forEach((p,i)=>{if(!p.name||age(p.birth,2026)===null)miss.push('家族'+(i+1)+'の氏名・生年月日');});
+  $('#missing').innerHTML=miss.length?`<p class="warn">まだ入っていない項目：${esc(miss.join('、'))}</p>`:'<p class="okmsg">必要な項目は入っています。保存して印刷してください。</p>';
+  $('#preview').innerHTML='<style>'+SHEET_CSS+'</style>'+sheetBody();
+}
+function hoCalc(){
+  const sum=(arr,f)=>arr.filter(f).reduce((t,r)=>t+(num(r.amt)||0),0);
+  const L=S.ins.includes('life')?S.life:[],Q=S.ins.includes('quake')?S.quake:[];
+  const A=sum(L,r=>r.kind==='ippan'&&r.nw!=='old'),B=sum(L,r=>r.kind==='ippan'&&r.nw==='old'),C=sum(L,r=>r.kind==='kaigo'),
+    D=sum(L,r=>r.kind==='nenkin'&&r.nw!=='old'),E=sum(L,r=>r.kind==='nenkin'&&r.nw==='old');
+  const u23=S.fam==='yes'&&S.family.some(p=>famCat(p,2026).u23);
+  const o={A,B,C,D,E,u23};
+  o.r3=fIII(B);
+  if(u23){o.r2=A?fII(A):0;o.r5=Math.min(o.r2+o.r3,60000);o.i=o.r5;}
+  else{o.r1=A?fI(A):0;o.r4=Math.min(o.r1+o.r3,40000);o.i=Math.max(o.r3,o.r4);}
+  if(!B)o.r3=0;
+  o.ro=C?fI(C):0;
+  o.r6=D?fI(D):0;o.r7=E?fIII(E):0;o.r8=Math.min(o.r6+o.r7,40000);o.ha=Math.max(o.r7,o.r8);
+  o.life=L.length?Math.min(o.i+o.ro+o.ha,120000):null;
+  const qb=sum(Q,r=>r.kind!=='kyu'),qc=sum(Q,r=>r.kind==='kyu');
+  o.qb=qb;o.qc=qc;o.qc2=qc<=10000?qc:Math.min(up(qc/2+5000),15000);
+  o.quake=Q.length?Math.min(Math.min(qb,50000)+o.qc2,50000):null;
+  return o;
+}
+
+/* ---------- 提出用シート ---------- */
+const SHEET_CSS=`
+.sh{background:#fff;color:#111;font-family:"BIZ UDPGothic","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;font-size:10.5px;line-height:1.45;width:186mm;margin:0 auto;padding:8mm;box-sizing:border-box}
+.sh *{box-sizing:border-box}
+.sh h1{font-size:15px;margin:0 0 2px;text-align:center;letter-spacing:.08em}
+.sh .sub{text-align:center;font-size:10px;margin:0 0 6px}
+.sh h2{font-size:11.5px;margin:10px 0 3px;padding:3px 6px;background:#e8ecf1;border-left:4px solid #24476e;display:flex;align-items:center;gap:6px}
+.sh h2 .m{display:inline-grid;place-items:center;min-width:20px;height:20px;border:1.3px solid #111;border-radius:50%;font-size:9px;line-height:1;padding:0 3px;background:#fff}
+.sh h3{font-size:10.5px;margin:6px 0 2px}
+.sh table{width:100%;border-collapse:collapse;table-layout:fixed}
+.sh th,.sh td{border:.6pt solid #555;padding:2px 4px;vertical-align:middle;text-align:left;word-break:break-all}
+.sh th{background:#f3f5f8;font-weight:400;font-size:9.5px}
+.sh td.n{text-align:right;font-variant-numeric:tabular-nums}
+.sh .mn{display:inline-flex}
+.sh .mn i{display:inline-block;width:11px;height:15px;border:.6pt solid #555;border-left:none}
+.sh .mn i:first-child{border-left:.6pt solid #555}
+.sh .mn i:nth-child(4n){border-right:1.2pt solid #333}
+.sh .none{color:#555;font-size:10px;margin:2px 0}
+.sh .note{font-size:9px;color:#333;margin:2px 0}
+.sh .sec{break-inside:avoid;page-break-inside:avoid}
+.sh .box{display:inline-block;width:10px;height:10px;border:.8pt solid #333;vertical-align:-1px;margin-right:3px}
+.sh .sign{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:10px}
+.sh .stamp{border:.6pt solid #555;width:60mm;height:16mm;font-size:8.5px;padding:2px 4px;color:#444}
+.sh .pb{break-before:page;page-break-before:always}
+`;
+function mn(){return '<span class="mn">'+'<i></i>'.repeat(12)+'</span>';}
+function tr(cells){return '<tr>'+cells.map(c=>Array.isArray(c)?`<${c[0]} ${c[2]||''}>${c[1]}</${c[0]}>`:`<td>${c}</td>`).join('')+'</tr>';}
+function fuSection(Y){
+  const yl=Y===2026?'令和8年分':'令和9年分';
+  const me=S.me,si=spInfo();
+  let h=`<div class="sec"><h2><span class="m">扶</span>${yl} 給与所得者の扶養控除等（異動）申告書</h2>`;
+  // A
+  h+='<h3>A 源泉控除対象配偶者</h3>';
+  const showA=si&&(Y===2026?si.A8:si.A9);
+  if(showA){const sp=S.spouse;
+    h+='<table><tr><th style="width:22%">氏名（フリガナ）</th><th style="width:28%">個人番号</th><th style="width:18%">生年月日</th><th style="width:14%">所得の見積額</th><th>住所（別居の場合）</th></tr>';
+    h+=tr([esc(sp.name)+'<br>（'+esc(sp.kana)+'）',mn(),wareki(sp.birth),['td',yen(spS(Y)),'class="n"'],esc(sp.addr)])+'</table>';
+  }else h+='<p class="none">該当なし</p>';
+  // B
+  const fam=S.fam==='yes'?S.family:[];
+  const B=fam.map(p=>({p,r:famCat(p,Y)})).filter(x=>x.r.b&&(x.r.b!=='特定親族'||x.r.s<=1000000));
+  h+='<h3>B 源泉控除対象親族（16歳以上）</h3>';
+  if(B.length){
+    h+='<table><tr><th style="width:18%">氏名（フリガナ）</th><th style="width:7%">続柄</th><th style="width:26%">個人番号</th><th style="width:15%">生年月日</th><th style="width:13%">区分</th><th style="width:11%">所得の見積額</th><th>住所（別居の場合）</th></tr>';
+    B.forEach(({p,r})=>h+=tr([esc(p.name)+'<br>（'+esc(p.kana)+'）',esc(p.rel),mn(),wareki(p.birth),r.b,['td',yen(r.s),'class="n"'],p.live==='no'?esc(p.addr):'']));
+    h+='</table>';
+  }else h+='<p class="none">該当なし</p>';
+  // C
+  h+='<h3>C 障害者・寡婦・ひとり親・勤労学生</h3>';
+  const C=[];
+  if(S.self.includes('dis'))C.push('本人：'+(me.dis==='s'?'特別障害者':'一般の障害者')+'（'+esc(me.disinfo)+'）');
+  if(si&&si.dosei&&S.spouse.dis)C.push('同一生計配偶者：'+(S.spouse.dis==='s'?(S.spouse.addr?'特別障害者':'同居特別障害者'):'一般の障害者')+'　'+esc(S.spouse.name));
+  fam.forEach(p=>{const r=famCat(p,Y);if(r.fuyou&&p.dis)C.push('扶養親族：'+(p.dis==='s'?(p.live==='no'?'特別障害者':'同居特別障害者'):'一般の障害者')+'　'+esc(p.name)+'（'+esc(p.disinfo)+'）');});
+  if(S.self.includes('widow'))C.push('寡婦');
+  if(S.self.includes('single'))C.push('ひとり親');
+  if(S.self.includes('student'))C.push('勤労学生（'+esc(me.school)+'）');
+  h+=C.length?'<table>'+C.map(c=>tr([c])).join('')+'</table>':'<p class="none">該当なし</p>';
+  // 住民税
+  const U=fam.map(p=>({p,r:famCat(p,Y)})).filter(x=>x.r.u16);
+  h+='<h3>住民税に関する事項（16歳未満の扶養親族）</h3>';
+  if(U.length){
+    h+='<table><tr><th style="width:22%">氏名（フリガナ）</th><th style="width:8%">続柄</th><th style="width:28%">個人番号</th><th style="width:16%">生年月日</th><th>住所（別居の場合）</th></tr>';
+    U.forEach(({p})=>h+=tr([esc(p.name)+'<br>（'+esc(p.kana)+'）',esc(p.rel),mn(),wareki(p.birth),p.live==='no'?esc(p.addr):'']));
+    h+='</table>';
+  }else h+='<p class="none">該当なし</p>';
+  h+='</div>';
+  return h;
+}
+function sheetBody(){
+  const me=S.me,si=spInfo();
+  const inc8=num(me.inc8),s8=meS(2026),[kd,k1,row]=kiso(s8);
+  let h='<div class="sh">';
+  h+='<h1>令和8年分 年末調整 申告書（提出用）</h1><p class="sub">扶養控除等（異動）申告書（令和8年分・令和9年分）／基礎控除申告書 兼 配偶者控除等申告書 兼 特定親族特別控除申告書 兼 所得金額調整控除申告書／保険料控除申告書</p>';
+  h+='<table><tr><th style="width:17%">給与の支払者</th><td colspan="3">株式会社イケイケカンパニー　東京都町田市高ヶ坂5-16-29</td></tr>';
+  h+=`<tr><th>所轄税務署長</th><td>町田　税務署長</td><th style="width:17%">市区町村長</th><td>${esc(me.city)}長</td></tr>`;
+  h+=`<tr><th>氏名（フリガナ）</th><td>${esc(me.name)}（${esc(me.kana)}）</td><th>所属</th><td>${esc(me.office)}</td></tr>`;
+  h+=`<tr><th>あなたの個人番号</th><td>${mn()}</td><th>生年月日</th><td>${wareki(me.birth)}</td></tr>`;
+  h+=`<tr><th>住所</th><td colspan="3">〒${esc(me.zip)}　${esc(me.addr)}</td></tr>`;
+  h+=`<tr><th>世帯主の氏名</th><td>${esc(me.head)}</td><th>あなたとの続柄</th><td>${esc(me.headrel)}</td></tr>`;
+  h+=`<tr><th>配偶者の有無</th><td>${S.sp==='yes'?'有':S.sp==='no'?'無':''}</td><th>ほかの勤務先</th><td>${S.work==='main'?'あり（この会社が主たる給与）':'なし'}</td></tr></table>`;
+
+  h+=fuSection(2026);
+
+  // 基配特所
+  h+='<div class="sec"><h2><span class="m">基配<br>特所</span>令和8年分 基礎控除申告書 兼 配偶者控除等申告書 兼 特定親族特別控除申告書 兼 所得金額調整控除申告書</h2>';
+  h+='<h3>基礎控除申告書（あなたの本年中の合計所得金額の見積額）</h3>';
+  h+='<table><tr><th>所得の種類</th><th>収入金額</th><th>所得金額</th><th>判定</th><th>区分Ⅰ</th><th>基礎控除の額</th></tr>';
+  h+=tr(['給与所得',['td',inc8!==null?yen(inc8):'','class="n"'],['td',inc8!==null?yen(s8):'','class="n"'],inc8!==null?row:'',inc8!==null&&S.sp==='yes'?(k1||'—'):'',['td',inc8!==null?yen(kd):'','class="n"']])+'</table>';
+  h+='<h3>配偶者控除等申告書</h3>';
+  if(si&&si.ded){const sp=S.spouse;
+    h+='<table><tr><th style="width:20%">配偶者の氏名（フリガナ）</th><th style="width:27%">個人番号</th><th style="width:15%">生年月日</th><th>給与の収入金額</th><th>合計所得金額</th><th>区分Ⅱ</th><th>控除額</th></tr>';
+    h+=tr([esc(sp.name)+'<br>（'+esc(sp.kana)+'）',mn(),wareki(sp.birth),['td',yen(num(sp.inc8)||0),'class="n"'],['td',yen(si.s8),'class="n"'],si.ded.k2,['td',si.ded.kind+'<br>'+yen(si.ded.amt),'class="n"']])+'</table>';
+    if(sp.addr)h+=`<p class="note">配偶者の住所（別居）：${esc(sp.addr)}</p>`;
+    if(num(sp.other))h+=`<p class="note">給与以外の所得 ${yen(num(sp.other))} を含みます。</p>`;
+  }else h+='<p class="none">該当なし</p>';
+  h+='<h3>特定親族特別控除申告書（19〜22歳で所得62万円超123万円以下の親族）</h3>';
+  const T=(S.fam==='yes'?S.family:[]).map(p=>({p,r:famCat(p,2026)})).filter(x=>x.r.tokutei);
+  if(T.length){
+    h+='<table><tr><th style="width:20%">氏名（フリガナ）</th><th style="width:8%">続柄</th><th style="width:27%">個人番号</th><th style="width:15%">生年月日</th><th>所得の見積額</th><th>控除額</th></tr>';
+    T.forEach(({p,r})=>h+=tr([esc(p.name)+'<br>（'+esc(p.kana)+'）',esc(p.rel),mn(),wareki(p.birth),['td',yen(r.s),'class="n"'],['td',yen(tokuteiDed(r.s)),'class="n"']]));
+    h+='</table>';
+  }else h+='<p class="none">該当なし</p>';
+  h+=`<h3>所得金額調整控除申告書</h3><p class="none">${(inc8||0)>8500000?'年収850万円超。特別障害者または23歳未満の扶養親族がいる場合は担当者に申し出てください。':'該当なし（年収850万円以下）'}</p></div>`;
+
+  // 保険料
+  const o=hoCalc(),L=S.ins.includes('life')?S.life:[],Q=S.ins.includes('quake')?S.quake:[],SO=S.ins.includes('social')?S.social:[],SM=S.ins.includes('small')?S.small:[];
+  h+='<div class="sec"><h2><span class="m">保</span>令和8年分 給与所得者の保険料控除申告書</h2>';
+  h+='<h3>生命保険料控除</h3>';
+  if(L.length){
+    const K={ippan:'一般',kaigo:'介護医療',nenkin:'個人年金'};
+    h+='<table><tr><th style="width:9%">区分</th><th style="width:15%">保険会社</th><th style="width:11%">種類</th><th style="width:8%">期間</th><th style="width:12%">契約者</th><th style="width:12%">受取人</th><th style="width:6%">新旧</th><th style="width:12%">支払開始日</th><th>金額</th></tr>';
+    L.forEach(r=>h+=tr([K[r.kind]||'',esc(r.co),esc(r.type),esc(r.period),esc(r.owner),esc(r.recv),r.kind==='kaigo'?'—':(r.nw==='old'?'旧':'新'),r.kind==='nenkin'?wareki(r.start):'',['td',yen(num(r.amt)||0),'class="n"']]));
+    h+='</table>';
+    h+='<table style="margin-top:3px"><tr><th>A 一般(新)</th><th>B 一般(旧)</th><th>C 介護医療</th><th>D 年金(新)</th><th>E 年金(旧)</th></tr>'+tr([o.A,o.B,o.C,o.D,o.E].map(v=>['td',yen(v),'class="n"']))+'</table>';
+    const cells=o.u23?[['②（計算式Ⅱ）',o.r2],['③',o.r3],['⑤ ②＋③',o.r5]]:[['①',o.r1],['③',o.r3],['④ ①＋③',o.r4]];
+    h+='<table style="margin-top:3px"><tr>'+cells.map(c=>'<th>'+c[0]+'</th>').join('')+'<th>イ 一般</th><th>ロ 介護医療</th><th>⑥</th><th>⑦</th><th>⑧</th><th>ハ 個人年金</th><th>生命保険料控除額</th></tr>';
+    h+=tr([...cells.map(c=>['td',yen(c[1]),'class="n"']),['td',yen(o.i),'class="n"'],['td',yen(o.ro),'class="n"'],['td',yen(o.r6),'class="n"'],['td',yen(o.r7),'class="n"'],['td',yen(o.r8),'class="n"'],['td',yen(o.ha),'class="n"'],['td','<b>'+yen(o.life)+'</b>','class="n"']])+'</table>';
+    if(o.u23){const c=(S.family.find(p=>famCat(p,2026).u23));h+=`<p class="note">☆年齢23歳未満の扶養親族：${esc(c.name)}（${esc(c.kana)}）　続柄 ${esc(c.rel)}　生年月日 ${wareki(c.birth)}　個人番号 ${mn()}</p>`;}
+  }else h+='<p class="none">該当なし</p>';
+  h+='<h3>地震保険料控除</h3>';
+  if(Q.length){
+    h+='<table><tr><th style="width:11%">区分</th><th style="width:17%">保険会社</th><th style="width:15%">種類（目的）</th><th style="width:9%">期間</th><th style="width:15%">契約者</th><th style="width:15%">居住者等</th><th>金額</th></tr>';
+    Q.forEach(r=>h+=tr([r.kind==='kyu'?'旧長期':'地震',esc(r.co),esc(r.type),esc(r.period),esc(r.owner),esc(r.resident),['td',yen(num(r.amt)||0),'class="n"']]));
+    h+=`</table><table style="margin-top:3px"><tr><th>Ⓑ 地震保険料の合計</th><th>Ⓒ 旧長期損害保険料の合計</th><th>地震保険料控除額</th></tr>${tr([['td',yen(o.qb),'class="n"'],['td',yen(o.qc),'class="n"'],['td','<b>'+yen(o.quake)+'</b>','class="n"']])}</table>`;
+  }else h+='<p class="none">該当なし</p>';
+  h+='<h3>社会保険料控除（自分で払った分）</h3>';
+  if(SO.length){
+    h+='<table><tr><th>種類</th><th>支払先</th><th>負担する人</th><th>金額</th></tr>';
+    SO.forEach(r=>h+=tr([esc(r.kind),esc(r.payee),esc(r.bearer),['td',yen(num(r.amt)||0),'class="n"']]));
+    h+=tr([['th','合計（控除額）','colspan="3"'],['td','<b>'+yen(SO.reduce((t,r)=>t+(num(r.amt)||0),0))+'</b>','class="n"']])+'</table>';
+  }else h+='<p class="none">該当なし</p>';
+  h+='<h3>小規模企業共済等掛金控除</h3>';
+  if(SM.length){
+    h+='<table><tr><th>種類</th><th style="width:25%">金額</th></tr>';
+    SM.forEach(r=>h+=tr([esc(r.kind),['td',yen(num(r.amt)||0),'class="n"']]));
+    h+=tr([['th','合計（控除額）'],['td','<b>'+yen(SM.reduce((t,r)=>t+(num(r.amt)||0),0))+'</b>','class="n"']])+'</table>';
+  }else h+='<p class="none">該当なし</p>';
+  h+='</div>';
+
+  // 添付と提出
+  const at=[];
+  if(S.prev==='yes')at.push('前の職場の令和8年分 源泉徴収票（原本）');
+  if(L.length)at.push('生命保険料控除証明書（原本）'+L.length+'枚');
+  if(Q.length)at.push('地震保険料控除証明書（原本）'+Q.length+'枚');
+  if(SO.some(r=>r.kind==='国民年金'||r.kind==='国民年金基金'))at.push('国民年金（基金）の控除証明書');
+  if(SM.length)at.push('掛金の払込証明書');
+  if(S.self.includes('student'))at.push('学校の証明書');
+  h+='<div class="sec"><h2>添付書類と確認</h2>';
+  h+=at.length?'<p>'+at.map(a=>'<span class="box"></span>'+esc(a)).join('　')+'</p>':'<p class="none">添付書類なし</p>';
+  h+='<p class="note">個人番号の欄は印刷後に手書きしてください。上記の内容に相違ありません。</p>';
+  h+=`<div class="sign"><div>提出日　令和8年　　月　　日<br><br>氏名（自署）　＿＿＿＿＿＿＿＿＿＿＿＿＿＿</div><div class="stamp">会社受付・確認欄</div></div></div>`;
+
+  // 令和9年分は改ページ
+  h+='<div class="pb"></div><h1>令和9年分 扶養控除等（異動）申告書（提出用）</h1>';
+  h+=`<table><tr><th style="width:17%">給与の支払者</th><td>株式会社イケイケカンパニー　東京都町田市高ヶ坂5-16-29</td><th style="width:14%">税務署長</th><td style="width:16%">町田</td></tr><tr><th>氏名（フリガナ）</th><td>${esc(me.name)}（${esc(me.kana)}）</td><th>市区町村長</th><td>${esc(me.city)}長</td></tr><tr><th>あなたの個人番号</th><td>${mn()}</td><th>生年月日</th><td>${wareki(me.birth)}</td></tr><tr><th>住所</th><td colspan="3">〒${esc(me.zip)}　${esc(me.addr)}</td></tr><tr><th>世帯主</th><td>${esc(me.head)}（続柄 ${esc(me.headrel)}）</td><th>配偶者</th><td>${S.sp==='yes'?'有':'無'}</td></tr></table>`;
+  h+=fuSection(2027);
+  h+='<p class="note">令和9年分は、来年の年収見込みと令和9年12月31日時点の年齢で判定しています。</p>';
+  h+='</div>';
+  return h;
+}
+
+/* ---------- 保存・印刷 ---------- */
+// 会社のサイトなどで直接開いたとき：そのまま印刷。Claudeの画面で開いたとき：ファイルに保存して印刷
+const standalone=!window.claude;
+let dl=null;
+function sheetDoc(){return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>年末調整 提出用シート '+esc(S.me.name||'')+'</title><style>'+SHEET_CSS+
+    'body{margin:0;background:#e9ecf0}@page{size:A4;margin:8mm}@media print{body{background:#fff}.bar{display:none}.sh{padding:0;width:auto}}.bar{text-align:center;padding:14px;font-family:sans-serif}.bar button{font-size:18px;padding:10px 28px;border-radius:8px;border:0;background:#24476e;color:#fff;cursor:pointer}.bar p{font-size:13px;color:#333;margin:6px 0 0}</style></head><body><div class="bar"><button onclick="window.print()">印刷する</button><p>A4縦で印刷し、個人番号を手書きして、控除証明書の原本を添えて提出してください。</p></div>'+sheetBody()+'</body></html>';}
+if(standalone){
+  $('#save').textContent='印刷する';
+  $('#howto').textContent='「印刷する」を押すと、提出用シートだけが印刷されます。A4縦を選んでください。スマホは、印刷画面でプリンタを選ぶか、PDFにして保存してからコンビニなどで印刷できます。';
+}else{
+  (async()=>{try{dl=await window.claude.use('downloads');}catch(e){dl=null;}
+    if(!dl){$('#save').disabled=true;$('#howto').textContent='この画面では保存も印刷もできません。会社から案内された印刷用のページで開いてください。';}})();
+}
+$('#save').addEventListener('click',async()=>{
+  if(standalone){
+    let pa=$('#printArea');if(!pa){pa=document.createElement('div');pa.id='printArea';document.body.appendChild(pa);}
+    pa.innerHTML='<style>'+SHEET_CSS+'</style>'+sheetBody();
+    window.print();return;
+  }
+  if(!dl)return;
+  const fn='年末調整_令和8年分_'+((S.me.name||'').replace(/[\\/:*?"<>|\s]/g,'')||'氏名未入力')+'.html';
+  $('#saveMsg').textContent='';
+  try{await dl.save({filename:fn,data:sheetDoc()});$('#saveMsg').textContent='保存しました。ファイルを開いて「印刷する」を押してください。';}
+  catch(e){$('#saveMsg').textContent=e&&e.code==='declined'?'保存をやめました。':e&&e.code==='rate_limited'?'少し待ってからもう一度押してください。':'保存できませんでした。もう一度お試しください。';}
+});
+let armed=false;
+$('#clear').addEventListener('click',()=>{
+  if(!armed){armed=true;$('#clear').textContent='本当に消す（もう一度押す）';setTimeout(()=>{armed=false;$('#clear').textContent='入力をすべて消す';},4000);return;}
+  try{localStorage.removeItem(KEY);}catch(e){}
+  S={work:null,prev:null,sp:null,fam:null,self:[],ins:[],me:{},spouse:{},family:[],life:[],quake:[],social:[],small:[]};
+  document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if('value' in el)el.value='';});
+  initFixedDates();armed=false;$('#clear').textContent='入力をすべて消す';syncOpts();renderLists();update();
+});
+function bindRefs(){document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if(!('value' in el))return;const[g,f]=el.id.split('-');el._obj=g==='me'?'me':'spouse';el._f=f;});}
+
+initFixedDates();bindOpts();syncOpts();
+// 固定欄：状態のオブジェクトを差し替えても追従するように、毎回S経由で書く
+document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{
+  if(!('value' in el)||el.tagName==='DIV')return;
+  const[g,f]=el.id.split('-');const o=()=>g==='me'?S.me:S.spouse;
+  el.value=o()[f]??'';
+  el.addEventListener('input',()=>{o()[f]=el.value;persist();update();});
+  el.addEventListener('change',()=>{o()[f]=el.value;persist();update();});
+});
+renderLists();update();
+</script>
