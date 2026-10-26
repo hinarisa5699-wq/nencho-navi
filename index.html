@@ -99,11 +99,15 @@ footer{font-size:12.5px;color:var(--muted)}
   <section class="q">
     <h2><span class="no">2</span>あなたのこと</h2>
     <div class="fields">
-      <label class="f">職員番号（わかる人だけ）<input id="me-code" inputmode="numeric" placeholder="例 0012"></label>
-      <label class="f">氏名 <em>必須</em><input id="me-name" autocomplete="name"></label>
+      <div class="w2 lookup"><b>会社の登録から呼び出す</b><span class="hint">職員番号・氏名・生年月日の3つを入れて「呼び出す」を押すと、フリガナ・住所・所属が入ります。3つが会社の登録と一致したときだけ表示されます。</span>
+        <div class="fields">
+          <label class="f">職員番号<input id="me-code" inputmode="numeric" placeholder="例 0012"></label>
+          <label class="f">氏名 <em>必須</em><input id="me-name" autocomplete="name"></label>
+          <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日 <em style="font-style:normal;color:var(--shu)">必須</em><span class="dsel" data-fixed="me.birth"></span></div>
+        </div>
+        <div><button class="btn" type="button" id="lookup">呼び出す</button></div><span id="lookupMsg" class="hint" role="status"></span></div>
       <label class="f">フリガナ <em>必須</em><input id="me-kana"></label>
-      <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日 <em style="font-style:normal;color:var(--shu)">必須</em><span class="dsel" data-fixed="me.birth"></span></div>
-      <label class="f">個人番号（マイナンバー12桁）<em>必須</em><input id="me-mn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="123456789012"></label>
+      <label class="f">個人番号（マイナンバー12桁）<em>必須</em><input id="me-mn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="12桁の数字"></label>
       <label class="f">所属（事業所）<input id="me-office" placeholder="例 アロハナースステーション"></label>
       <label class="f">郵便番号<input id="me-zip" inputmode="numeric" placeholder="194-0000"></label>
       <label class="f">住んでいる市区町村 <em>必須</em><input id="me-city" placeholder="例 町田市"></label>
@@ -673,6 +677,18 @@ function mnOk(v){
   const r=sum%11,c=r<=1?0:11-r;return c===+d[11];
 }
 
+/* ---------- 会社の登録から呼び出す（職員番号・氏名・生年月日の3つが一致したときだけ） ---------- */
+$('#lookup').addEventListener('click',async()=>{
+  const msg=$('#lookupMsg'),code=(S.me.code||'').trim(),name=(S.me.name||'').trim(),birth=S.me.birth;
+  if(!code||!name||age(birth,2026)===null){msg.textContent='職員番号・氏名・生年月日の3つを入れてから押してください。';return;}
+  msg.textContent='呼び出しています…';
+  try{
+    const r=await api({action:'lookup',code,name,birth});
+    if(!r.ok){msg.textContent=r.message||'一致する登録がありませんでした。そのまま入力してください。';return;}
+    const d=r.person;['kana','zip','city','addr','office'].forEach(k=>{if(d[k])S.me[k]=d[k];});
+    persist();refreshFixed();update();msg.textContent='呼び出しました。内容を確かめて、違うところは直してください。';
+  }catch(e){msg.textContent='通信できませんでした。そのまま入力してください。';}
+});
 function refreshFixed(){
   document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if(!('value' in el)||el.tagName==='DIV')return;const[g,f]=el.id.split('-');el.value=(g==='me'?S.me:S.spouse)[f]??'';});
   initFixedDates();
@@ -733,7 +749,13 @@ $('#submit').addEventListener('click',async()=>{
   if(sending)return;sending=true;$('#submit').disabled=true;msg.className='hint';msg.textContent='送信しています。画面を閉じずにお待ちください…';
   try{
     const r=await api({action:'submit',version:2,data:S,summary:summary(),sheet:'<style>'+SHEET_CSS+'</style>'+sheetBody(),photos:PHOTOS.map((p,i)=>({name:(S.me.name||'')+'_写真'+(i+1)+'.jpg',data:p.data.split(',')[1]}))});
-    if(r.ok){msg.className='okmsg';msg.textContent='提出しました（受付番号 '+r.id+'）。直したいときは、直してからもう一度「提出する」を押してください。新しい内容で受け付けます。';}
+    if(r.ok){
+      try{localStorage.removeItem(KEY);}catch(e){}
+      const w0=S.work;S={work:w0,prev:null,sp:null,fam:null,self:[],ins:[],me:{},spouse:{},family:[],life:[],quake:[],social:[],small:[]};PHOTOS=[];
+      refreshFixed();syncOpts();renderLists();renderPhotos();update();
+      msg.className='okmsg';msg.textContent='提出しました（受付番号 '+r.id+'）。この端末に残っていた入力は消しました。直したいことがあるときは担当者に伝えてください。';
+      msg.scrollIntoView({block:'center'});
+    }
     else{msg.className='warn';msg.textContent='提出できませんでした：'+(r.message||'もう一度お試しください。');}
   }catch(e){msg.className='warn';msg.textContent='通信できませんでした。電波のよい所でもう一度押してください。';}
   sending=false;$('#submit').disabled=false;
