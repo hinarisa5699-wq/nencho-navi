@@ -107,7 +107,8 @@ footer{font-size:12.5px;color:var(--muted)}
         <div><button class="btn" type="button" id="lookup">呼び出す</button></div><span id="lookupMsg" class="hint" role="status"></span></div>
       <label class="f">職員番号<input id="me-code" inputmode="numeric" placeholder="呼び出すと入ります"></label>
       <label class="f">フリガナ <em>必須</em><input id="me-kana"></label>
-      <label class="f">個人番号（マイナンバー12桁）<em>必須</em><input id="me-mn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="12桁の数字"></label>
+      <label class="f">個人番号（マイナンバー12桁）<em id="mnReq">必須</em><input id="me-mn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="12桁の数字"></label>
+      <div class="w2" style="display:flex;flex-direction:column;gap:4px"><label class="chk"><input type="checkbox" id="mnGiven"> マイナンバーは会社に提出済みで、変更はありません（入力を省く）</label><span class="hint">チェックすると、あなたと家族のマイナンバーは入れなくてかまいません。申告書には「給与支払者に提供済みの個人番号と相違ない」と記載されます。初めて年末調整を出す人、今年あたらしく扶養に入れる家族がいる人は、チェックせずに入力してください。</span></div>
       <label class="f">所属（事業所）<input id="me-office" placeholder="例 アロハナースステーション"></label>
       <label class="f">郵便番号<input id="me-zip" inputmode="numeric" placeholder="194-0000"></label>
       <label class="f">住んでいる市区町村 <em>必須</em><input id="me-city" placeholder="例 町田市"></label>
@@ -451,6 +452,7 @@ function spInfo(){
 }
 function update(){
   const sub=S.work==='sub';
+  $('#mnGiven').checked=!!S.mnGiven;$('#mnReq').textContent=S.mnGiven?'省略可':'必須';
   $('#subMsg').hidden=!sub;$('#main').hidden=!S.work||sub;
   $('#sp-box').hidden=S.sp!=='yes';
   $('#fam-box').hidden=S.fam!=='yes';$('#fam-box').style.display=S.fam==='yes'?'flex':'none';
@@ -526,7 +528,7 @@ const SHEET_CSS=`
 .sh .stamp{border:.6pt solid #555;width:60mm;height:16mm;font-size:8.5px;padding:2px 4px;color:#444}
 .sh .pb{break-before:page;page-break-before:always}
 `;
-function mn(v){const d=String(v||'').replace(/\D/g,'');return '<span class="mn">'+Array.from({length:12},(_,i)=>'<i>'+(d[i]||'')+'</i>').join('')+'</span>';}
+function mn(v){const d=String(v||'').replace(/\D/g,'');if(!d&&S.mnGiven)return '<span>提供済み（相違なし）</span>';return '<span class="mn">'+Array.from({length:12},(_,i)=>'<i>'+(d[i]||'')+'</i>').join('')+'</span>';}
 function tr(cells){return '<tr>'+cells.map(c=>Array.isArray(c)?`<${c[0]} ${c[2]||''}>${c[1]}</${c[0]}>`:`<td>${c}</td>`).join('')+'</tr>';}
 function fuSection(Y){
   const yl=Y===2026?'令和8年分':'令和9年分';
@@ -573,7 +575,7 @@ function sheetBody(){
   const me=S.me,si=spInfo();
   const inc8=num(me.inc8),s8=meS(2026),[kd,k1,row]=kiso(s8);
   let h='<div class="sh">';
-  h+='<h1>令和8年分 年末調整 申告書（提出用）</h1><p class="sub">扶養控除等（異動）申告書（令和8年分・令和9年分）／基礎控除申告書 兼 配偶者控除等申告書 兼 特定親族特別控除申告書 兼 所得金額調整控除申告書／保険料控除申告書</p>';
+  h+='<h1>令和8年分 年末調整 申告書（提出用）</h1>'+(S.mnGiven?'<p class="note">※マイナンバー：給与支払者に提供済みの個人番号と相違ありません。</p>':'')+'<p class="sub">扶養控除等（異動）申告書（令和8年分・令和9年分）／基礎控除申告書 兼 配偶者控除等申告書 兼 特定親族特別控除申告書 兼 所得金額調整控除申告書／保険料控除申告書</p>';
   h+='<table><tr><th style="width:17%">給与の支払者</th><td colspan="3">株式会社イケイケカンパニー　東京都町田市高ヶ坂5-16-29</td></tr>';
   h+=`<tr><th>所轄税務署長</th><td>町田　税務署長</td><th style="width:17%">市区町村長</th><td>${esc(me.city)}長</td></tr>`;
   h+=`<tr><th>氏名（フリガナ）</th><td>${esc(me.name)}（${esc(me.kana)}）</td><th>所属</th><td>${esc(me.office)}</td></tr>`;
@@ -655,7 +657,7 @@ function sheetBody(){
   h+=`<div class="sign"><div>提出日　令和8年　　月　　日<br><br>氏名（自署）　＿＿＿＿＿＿＿＿＿＿＿＿＿＿</div><div class="stamp">会社受付・確認欄</div></div></div>`;
 
   // 令和9年分は改ページ
-  h+='<div class="pb"></div><h1>令和9年分 扶養控除等（異動）申告書（提出用）</h1>';
+  h+='<div class="pb"></div><h1>令和9年分 扶養控除等（異動）申告書（提出用）</h1>'+(S.mnGiven?'<p class="note">※マイナンバー：給与支払者に提供済みの個人番号と相違ありません。</p>':'');
   h+=`<table><tr><th style="width:17%">給与の支払者</th><td>株式会社イケイケカンパニー　東京都町田市高ヶ坂5-16-29</td><th style="width:14%">税務署長</th><td style="width:16%">町田</td></tr><tr><th>氏名（フリガナ）</th><td>${esc(me.name)}（${esc(me.kana)}）</td><th>市区町村長</th><td>${esc(me.city)}長</td></tr><tr><th>あなたの個人番号</th><td>${mn(me.mn)}</td><th>生年月日</th><td>${wareki(me.birth)}</td></tr><tr><th>住所</th><td colspan="3">〒${esc(me.zip)}　${esc(me.addr)}</td></tr><tr><th>世帯主</th><td>${esc(me.head)}（続柄 ${esc(me.headrel)}）</td><th>配偶者</th><td>${S.sp==='yes'?'有':'無'}</td></tr></table>`;
   h+=fuSection(2027);
   h+='<p class="note">令和9年分は、来年の年収見込みと令和9年12月31日時点の年齢で判定しています。</p>';
@@ -727,7 +729,7 @@ $('#save').addEventListener('click',()=>{
 function problems(){
   const m=[];
   if(!S.me.name)m.push('氏名');if(!S.me.kana)m.push('フリガナ');if(age(S.me.birth,2026)===null)m.push('生年月日');if(!S.me.addr)m.push('住所');if(!S.me.city)m.push('市区町村');
-  if(!mnOk(S.me.mn))m.push('あなたのマイナンバー（12桁）');
+  if(S.mnGiven?(S.me.mn&&!mnOk(S.me.mn)):!mnOk(S.me.mn))m.push('あなたのマイナンバー（12桁）');
   if(S.sp===null)m.push('質問4');if(S.fam===null)m.push('質問5');if(!S.ins.length)m.push('質問7');if(S.prev===null)m.push('質問3');
   if(S.sp==='yes'&&S.spouse.mn&&!mnOk(S.spouse.mn))m.push('配偶者のマイナンバー（番号が正しくありません）');
   S.family.forEach((p,i)=>{if(S.fam!=='yes')return;if(!p.name||age(p.birth,2026)===null)m.push('家族'+(i+1)+'の氏名・生年月日');if(p.mn&&!mnOk(p.mn))m.push('家族'+(i+1)+'のマイナンバー（番号が正しくありません）');});
@@ -774,6 +776,7 @@ $('#clear').addEventListener('click',()=>{
   document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if('value' in el)el.value='';});
   initFixedDates();armed=false;$('#clear').textContent='入力をすべて消す';syncOpts();renderLists();update();
 });
+$('#mnGiven').addEventListener('change',e=>{S.mnGiven=e.target.checked;persist();update();});
 function bindRefs(){document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if(!('value' in el))return;const[g,f]=el.id.split('-');el._obj=g==='me'?'me':'spouse';el._f=f;});}
 
 initFixedDates();bindOpts();syncOpts();
