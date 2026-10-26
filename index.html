@@ -99,7 +99,7 @@ footer{font-size:12.5px;color:var(--muted)}
   <section class="q">
     <h2><span class="no">2</span>あなたのこと</h2>
     <div class="fields">
-      <div class="w2 lookup"><b>会社の登録から呼び出す</b><span class="hint">氏名と生年月日を入れて「呼び出す」を押すと、フリガナ・住所・所属・職員番号が入ります。2つが会社の登録と一致したときだけ表示されます。</span>
+      <div class="w2 lookup"><b>会社の登録から呼び出す</b><span class="hint">氏名と生年月日を入れて「呼び出す」を押すと、フリガナ・住所・所属・職員番号と、会社に登録されている家族が入ります。2つが会社の登録と一致したときだけ表示されます。</span>
         <div class="fields">
           <label class="f">氏名 <em>必須</em><input id="me-name" autocomplete="name"></label>
           <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日 <em style="font-style:normal;color:var(--shu)">必須</em><span class="dsel" data-fixed="me.birth"></span></div>
@@ -686,7 +686,13 @@ $('#lookup').addEventListener('click',async()=>{
     const r=await api({action:'lookup',name,birth});
     if(!r.ok){msg.textContent=r.message||'一致する登録がありませんでした。そのまま入力してください。';return;}
     const d=r.person;['code','kana','zip','city','addr','office'].forEach(k=>{if(d[k])S.me[k]=d[k];});
-    persist();refreshFixed();update();msg.textContent='呼び出しました。内容を確かめて、違うところは直してください。';
+    /* 会社に登録されている家族（配偶者・子など）も入れる。マイナンバーと年収は本人が入れる */
+    const fm=r.family||{};let famMsg='';
+    if(fm.spouse&&fm.spouse.name&&!S.spouse.name){S.spouse.name=fm.spouse.name;if(fm.spouse.kana)S.spouse.kana=fm.spouse.kana;if(fm.spouse.birth)S.spouse.birth=fm.spouse.birth;if(S.sp===null)S.sp='yes';famMsg+='配偶者';}
+    const kids=(fm.family||[]).filter(x=>x&&x.name&&!S.family.some(p=>(p.name||'').replace(/\s/g,'')===x.name.replace(/\s/g,'')));
+    if(kids.length){S.family=S.family.filter(p=>p.name);kids.forEach(x=>S.family.push({name:x.name,kana:x.kana||'',rel:x.rel||'その他',birth:x.birth||'',live:x.live||'yes'}));if(S.fam===null||S.fam==='no')S.fam='yes';famMsg+=(famMsg?'と':'')+'家族'+kids.length+'人';}
+    persist();refreshFixed();syncOpts();renderLists();update();
+    msg.textContent='呼び出しました。'+(famMsg?famMsg+'も入れました（マイナンバーと年収は入れてください）。':'')+'内容を確かめて、違うところは直してください。';
   }catch(e){msg.textContent='通信できませんでした。そのまま入力してください。';}
 });
 function refreshFixed(){
