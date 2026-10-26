@@ -99,12 +99,13 @@ footer{font-size:12.5px;color:var(--muted)}
   <section class="q">
     <h2><span class="no">2</span>あなたのこと</h2>
     <div class="fields">
-      <div class="w2 lookup"><b>会社の登録から呼び出す</b><span class="hint">氏名と生年月日を入れて「呼び出す」を押すと、フリガナ・住所・所属が入ります。会社の登録と一致したときだけ表示されます。</span>
+      <div class="w2 lookup"><b>会社の登録から呼び出す</b><span class="hint">氏名と生年月日を入れて「呼び出す」を押すと、フリガナ・住所・所属・職員番号が入ります。2つが会社の登録と一致したときだけ表示されます。</span>
         <div class="fields">
           <label class="f">氏名 <em>必須</em><input id="me-name" autocomplete="name"></label>
           <div class="f" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)">生年月日 <em style="font-style:normal;color:var(--shu)">必須</em><span class="dsel" data-fixed="me.birth"></span></div>
         </div>
         <div><button class="btn" type="button" id="lookup">呼び出す</button></div><span id="lookupMsg" class="hint" role="status"></span></div>
+      <label class="f">職員番号<input id="me-code" inputmode="numeric" placeholder="呼び出すと入ります"></label>
       <label class="f">フリガナ <em>必須</em><input id="me-kana"></label>
       <label class="f">個人番号（マイナンバー12桁）<em>必須</em><input id="me-mn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="12桁の数字"></label>
       <label class="f">所属（事業所）<input id="me-office" placeholder="例 アロハナースステーション"></label>
@@ -676,7 +677,7 @@ function mnOk(v){
   const r=sum%11,c=r<=1?0:11-r;return c===+d[11];
 }
 
-/* ---------- 会社の登録から呼び出す（氏名・生年月日が一致したときだけ） ---------- */
+/* ---------- 会社の登録から呼び出す（氏名・生年月日の2つが一致したときだけ） ---------- */
 $('#lookup').addEventListener('click',async()=>{
   const msg=$('#lookupMsg'),name=(S.me.name||'').trim(),birth=S.me.birth;
   if(!name||age(birth,2026)===null){msg.textContent='氏名と生年月日を入れてから押してください。';return;}
@@ -684,7 +685,7 @@ $('#lookup').addEventListener('click',async()=>{
   try{
     const r=await api({action:'lookup',name,birth});
     if(!r.ok){msg.textContent=r.message||'一致する登録がありませんでした。そのまま入力してください。';return;}
-    const d=r.person;['kana','zip','city','addr','office'].forEach(k=>{if(d[k])S.me[k]=d[k];});
+    const d=r.person;['code','kana','zip','city','addr','office'].forEach(k=>{if(d[k])S.me[k]=d[k];});
     persist();refreshFixed();update();msg.textContent='呼び出しました。内容を確かめて、違うところは直してください。';
   }catch(e){msg.textContent='通信できませんでした。そのまま入力してください。';}
 });
