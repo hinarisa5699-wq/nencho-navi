@@ -127,6 +127,13 @@ footer{font-size:12.5px;color:var(--muted)}
       <button class="opt" data-v="no">いいえ</button>
       <button class="opt" data-v="yes">はい<span class="sub">前の職場の源泉徴収票（原本）が必要です</span></button>
     </div>
+    <div class="person" id="prev-box" hidden>
+      <div class="fields">
+        <label class="f">前の職場の会社名<input id="me-prevCo"></label>
+        <label class="f">前の職場の支払金額（源泉徴収票の「支払金額」）<input id="me-prevPay" type="number" inputmode="numeric" min="0" step="1"></label>
+        <div class="w2" style="display:flex;flex-direction:column;gap:4px"><label class="chk"><input type="checkbox" id="prevGiven"> 前の職場の源泉徴収票（原本）は、もう会社に提出済み</label><span class="hint">まだ出していない人は、源泉徴収票を写真で撮って添付し、原本も会社に提出してください。</span></div>
+      </div>
+    </div>
   </section>
 
   <section class="q">
@@ -305,7 +312,8 @@ function wareki(b){
   return e+(ey===1?'元':ey)+'年'+m+'月'+d+'日';
 }
 const income=(p,Y)=>Y===2026?num(p.inc8):(num(p.inc9)??num(p.inc8));
-function meS(Y){return kyuyo(income(S.me,Y)||0);}
+function meInc8(){return (num(S.me.inc8)||0)+(S.prev==='yes'?(num(S.me.prevPay)||0):0);}
+function meS(Y){return kyuyo(Y===2026?meInc8():(income(S.me,Y)||0));}
 function spS(Y){const sp=S.spouse;return kyuyo(income(sp,Y)||0)+(num(sp.other)||0);}
 const ASC=['父','母','祖父','祖母','義父','義母'];
 function famCat(p,Y){
@@ -454,7 +462,7 @@ function update(){
   const sub=S.work==='sub';
   $('#mnGiven').checked=!!S.mnGiven;$('#mnReq').textContent=S.mnGiven?'省略可':'必須';
   $('#subMsg').hidden=!sub;$('#main').hidden=!S.work||sub;
-  $('#sp-box').hidden=S.sp!=='yes';
+  $('#sp-box').hidden=S.sp!=='yes';$('#prev-box').hidden=S.prev!=='yes';$('#prevGiven').checked=!!S.prevGiven;
   $('#fam-box').hidden=S.fam!=='yes';$('#fam-box').style.display=S.fam==='yes'?'flex':'none';
   $('#self-detail').hidden=!(S.self.includes('dis')||S.self.includes('student'));
   document.querySelectorAll('#self-detail [data-for]').forEach(e=>e.hidden=!S.self.includes(e.dataset.for));
@@ -573,7 +581,7 @@ function fuSection(Y){
 }
 function sheetBody(){
   const me=S.me,si=spInfo();
-  const inc8=num(me.inc8),s8=meS(2026),[kd,k1,row]=kiso(s8);
+  const inc8=(num(me.inc8)===null&&!(S.prev==='yes'&&num(me.prevPay)))?null:meInc8(),s8=meS(2026),[kd,k1,row]=kiso(s8);
   let h='<div class="sh">';
   h+='<h1>令和8年分 年末調整 申告書（提出用）</h1>'+(S.mnGiven?'<p class="note">※マイナンバー：給与支払者に提供済みの個人番号と相違ありません。</p>':'')+'<p class="sub">扶養控除等（異動）申告書（令和8年分・令和9年分）／基礎控除申告書 兼 配偶者控除等申告書 兼 特定親族特別控除申告書 兼 所得金額調整控除申告書／保険料控除申告書</p>';
   h+='<table><tr><th style="width:17%">給与の支払者</th><td colspan="3">株式会社イケイケカンパニー　東京都町田市高ヶ坂5-16-29</td></tr>';
@@ -644,7 +652,7 @@ function sheetBody(){
 
   // 添付と提出
   const at=[];
-  if(S.prev==='yes')at.push('前の職場の令和8年分 源泉徴収票（原本）');
+  if(S.prev==='yes')at.push('前の職場の令和8年分 源泉徴収票（原本）'+(S.me.prevCo?'（'+esc(S.me.prevCo)+'　支払金額 '+yen(num(S.me.prevPay)||0)+'）':'')+(S.prevGiven?'：会社に提出済み':''));
   if(L.length)at.push('生命保険料控除証明書（原本）'+L.length+'枚');
   if(Q.length)at.push('地震保険料控除証明書（原本）'+Q.length+'枚');
   if(SO.some(r=>r.kind==='国民年金'||r.kind==='国民年金基金'))at.push('国民年金（基金）の控除証明書');
@@ -730,24 +738,24 @@ function problems(){
   const m=[];
   if(!S.me.name)m.push('氏名');if(!S.me.kana)m.push('フリガナ');if(age(S.me.birth,2026)===null)m.push('生年月日');if(!S.me.addr)m.push('住所');if(!S.me.city)m.push('市区町村');
   if(S.mnGiven?(S.me.mn&&!mnOk(S.me.mn)):!mnOk(S.me.mn))m.push('あなたのマイナンバー（12桁）');
-  if(S.sp===null)m.push('質問4');if(S.fam===null)m.push('質問5');if(!S.ins.length)m.push('質問7');if(S.prev===null)m.push('質問3');
+  if(S.sp===null)m.push('質問4');if(S.fam===null)m.push('質問5');if(!S.ins.length)m.push('質問7');if(S.prev===null)m.push('質問3');if(S.prev==='yes'&&num(S.me.prevPay)===null)m.push('前の職場の支払金額');
   if(S.sp==='yes'&&S.spouse.mn&&!mnOk(S.spouse.mn))m.push('配偶者のマイナンバー（番号が正しくありません）');
   S.family.forEach((p,i)=>{if(S.fam!=='yes')return;if(!p.name||age(p.birth,2026)===null)m.push('家族'+(i+1)+'の氏名・生年月日');if(p.mn&&!mnOk(p.mn))m.push('家族'+(i+1)+'のマイナンバー（番号が正しくありません）');});
-  const needPhoto=(S.ins.some(v=>['life','quake','small'].includes(v)))||S.prev==='yes'||(S.social||[]).some(r=>/国民年金/.test(r.kind||''));
+  const needPhoto=(S.ins.some(v=>['life','quake','small'].includes(v)))||(S.prev==='yes'&&!S.prevGiven)||(S.social||[]).some(r=>/国民年金/.test(r.kind||''));
   if(S.ins.length&&needPhoto&&!PHOTOS.length)m.push('証明書の写真');
   return m;
 }
 function summary(){
   const o=hoCalc(),s8=meS(2026),si=spInfo(),fam=S.fam==='yes'?S.family:[];
   return{name:S.me.name,kana:S.me.kana,office:S.me.office||'',code:(S.me.code||'').trim(),
-    income:num(S.me.inc8)||0,shotoku:s8,kiso:kiso(s8)[0],
+    income:meInc8(),shotoku:s8,kiso:kiso(s8)[0],
     spouse:si&&si.ded?si.ded.kind+' '+si.ded.amt:'',
     fuyou:fam.filter(p=>famCat(p,2026).b).length,u16:fam.filter(p=>famCat(p,2026).u16).length,
     tokutei:fam.filter(p=>famCat(p,2026).tokutei).reduce((t,p)=>t+tokuteiDed(famCat(p,2026).s),0),
     life:o.life||0,quake:o.quake||0,
     social:(S.ins.includes('social')?S.social:[]).reduce((t,r)=>t+(num(r.amt)||0),0),
     small:(S.ins.includes('small')?S.small:[]).reduce((t,r)=>t+(num(r.amt)||0),0),
-    prevJob:S.prev==='yes',photos:PHOTOS.length};
+    prevJob:S.prev==='yes',prevGiven:!!S.prevGiven,photos:PHOTOS.length};
 }
 let sending=false;
 $('#submit').addEventListener('click',async()=>{
@@ -776,6 +784,7 @@ $('#clear').addEventListener('click',()=>{
   document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if('value' in el)el.value='';});
   initFixedDates();armed=false;$('#clear').textContent='入力をすべて消す';syncOpts();renderLists();update();
 });
+$('#prevGiven').addEventListener('change',e=>{S.prevGiven=e.target.checked;persist();update();});
 $('#mnGiven').addEventListener('change',e=>{S.mnGiven=e.target.checked;persist();update();});
 function bindRefs(){document.querySelectorAll('[id^="me-"],[id^="sp-"]').forEach(el=>{if(!('value' in el))return;const[g,f]=el.id.split('-');el._obj=g==='me'?'me':'spouse';el._f=f;});}
 
